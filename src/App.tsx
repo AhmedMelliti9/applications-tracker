@@ -9,6 +9,7 @@ import Modal from "./components/Modal";
 import ConfirmDialog from "./components/ConfirmDialog";
 import ApplicationForm from "./components/ApplicationForm";
 import ApplicationCard from "./components/ApplicationCard";
+import SearchFilterBar from "./components/SearchFilterBar";
 
 function App() {
   const [applications, setApplications] = useLocalStorage<Application[]>(
@@ -18,6 +19,9 @@ function App() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingApplication, setEditingApplication] = useState<Application | null>(null);
   const [deletingApplication, setDeletingApplication] = useState<Application | null>(null);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [statusFilter, setStatusFilter] = useState<ApplicationStatus | "all">("all");
+  const [sortOrder, setSortOrder] = useState<"newest" | "oldest">("newest");
 
   function openAddModal() {
     setEditingApplication(null);
@@ -60,26 +64,61 @@ function App() {
     setDeletingApplication(null);
   }
 
+  const filteredApplications = applications
+    .filter((app) => {
+      const matchesSearch =
+        app.companyName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        app.position.toLowerCase().includes(searchTerm.toLowerCase());
+      const matchesStatus = statusFilter === "all" || app.status === statusFilter;
+      return matchesSearch && matchesStatus;
+    })
+    .sort((a, b) => {
+      const dateA = new Date(a.dateApplied).getTime();
+      const dateB = new Date(b.dateApplied).getTime();
+      return sortOrder === "newest" ? dateB - dateA : dateA - dateB;
+    });
+
   return (
     <div className="min-h-screen bg-gray-950 text-white flex flex-col">
       <Header />
-      <StatsSummary />
+      <StatsSummary applications={applications} />
       <main className="flex-1 p-6">
-        <div className="flex justify-between items-center mb-6">
+        <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-3 mb-6">
           <h2 className="text-xl font-semibold">Your Applications</h2>
-          <button onClick={openAddModal}
-            className="bg-gradient-to-r from-blue-500 to-violet-500 rounded-lg px-4 py-2 font-semibold hover:opacity-90 transition">
+          <button
+            onClick={openAddModal}
+            className="bg-gradient-to-r from-blue-500 to-violet-500 rounded-lg px-4 py-2 font-semibold hover:opacity-90 transition self-start sm:self-auto"
+          >
             + Add Application
           </button>
         </div>
 
+        {applications.length > 0 && (
+          <SearchFilterBar
+            searchTerm={searchTerm}
+            onSearchChange={setSearchTerm}
+            statusFilter={statusFilter}
+            onStatusFilterChange={setStatusFilter}
+            sortOrder={sortOrder}
+            onSortOrderChange={setSortOrder}
+          />
+        )}
+
         {applications.length === 0 ? (
-          <p className="text-gray-500 text-center py-12">
-            No applications yet — click "Add Application" to get started.
-          </p>
+          <div className="text-center py-16">
+            <p className="text-5xl mb-4">📋</p>
+            <p className="text-gray-400 text-lg mb-1">No applications yet</p>
+            <p className="text-gray-500 text-sm">Click "Add Application" to start tracking your job search.</p>
+          </div>
+        ) : filteredApplications.length === 0 ? (
+          <div className="text-center py-16">
+            <p className="text-5xl mb-4">🔍</p>
+            <p className="text-gray-400 text-lg mb-1">No matches found</p>
+            <p className="text-gray-500 text-sm">Try adjusting your search or filter.</p>
+          </div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            {applications.map((app) => (
+            {filteredApplications.map((app) => (
               <ApplicationCard
                 key={app.id}
                 application={app}
