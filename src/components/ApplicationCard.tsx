@@ -1,11 +1,14 @@
-import { type Application } from "../types";
+import { type Application, ApplicationStatus } from "../types";
 import { STATUS_CONFIG } from "../config/statusConfig";
 
 interface ApplicationCardProps {
   application: Application;
+  onEdit: (application: Application) => void;
+  onDelete: (application: Application) => void;
+  onStatusChange: (id: string, status: ApplicationStatus) => void;
 }
 
-function ApplicationCard({ application }: ApplicationCardProps) {
+function ApplicationCard({ application, onEdit, onDelete, onStatusChange }: ApplicationCardProps) {
   const statusConfig = STATUS_CONFIG[application.status];
 
   return (
@@ -19,9 +22,33 @@ function ApplicationCard({ application }: ApplicationCardProps) {
           {statusConfig.label}
         </span>
       </div>
+
       <div className="mt-3 text-sm text-gray-500 flex justify-between">
         <span>{application.location || "—"}</span>
         <span>Applied {application.dateApplied}</span>
+      </div>
+
+      <select
+        value={application.status}
+        onChange={(e) => onStatusChange(application.id, e.target.value as ApplicationStatus)}
+        className="mt-3 w-full bg-gray-800 rounded-lg px-2 py-1 text-sm outline-none"
+      >
+        {Object.values(ApplicationStatus).map((status) => (
+          <option key={status} value={status}>
+            {STATUS_CONFIG[status].label}
+          </option>
+        ))}
+      </select>
+
+      <div className="mt-3 flex gap-2">
+        <button onClick={() => onEdit(application)}
+          className="flex-1 text-sm bg-gray-800 hover:bg-gray-700 rounded-lg py-1.5 transition">
+          Edit
+        </button>
+        <button onClick={() => onDelete(application)}
+          className="flex-1 text-sm bg-gray-800 hover:bg-red-900 text-red-400 rounded-lg py-1.5 transition">
+          Delete
+        </button>
       </div>
     </div>
   );
